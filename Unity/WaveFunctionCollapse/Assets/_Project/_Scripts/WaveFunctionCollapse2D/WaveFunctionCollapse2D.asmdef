@@ -1,7 +1,10 @@
 {
     "name": "WaveFunctionCollapse2D",
     "rootNamespace": "WaveFunctionCollapse2D",
-    "references": [],
+    "references": [
+        "GUID:85fe2b9edf3b3c549b17c603c19105da",
+        "GUID:6055be8ebefd69e48b49212b09b47b2f"
+    ],
     "includePlatforms": [],
     "excludePlatforms": [],
     "allowUnsafeCode": false,

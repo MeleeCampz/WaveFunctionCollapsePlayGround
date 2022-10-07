@@ -13,3 +13,13 @@ MonoBehaviour:
   m_Name: SOGlobalTileSettings
   m_EditorClassIdentifier: 
   _tileSize: {x: 64, y: 64}
+  _mapSize: {x: 32, y: 32}
+  _allTileSettings:
+  - {fileID: 11400000, guid: 6e05656ddf24f8c4589b789eb8a6447a, type: 2}
+  - {fileID: 11400000, guid: e6d96ffc075428b4d869b300ad839a81, type: 2}
+  - {fileID: 11400000, guid: acd0980999fae6248be383f2252ebf32, type: 2}
+  - {fileID: 11400000, guid: c5ac7d405f0876b498c18bcc2181ecde, type: 2}
+  - {fileID: 11400000, guid: b589910a2e527184d8b6d6e12c5cf812, type: 2}
+  - {fileID: 11400000, guid: 1ab528b6e898b634a94a16a47e271764, type: 2}
+  _notSolvedSprite: {fileID: 21300000, guid: 92110b08071fae344a442f3ddc8ad2c2, type: 3}
+  _errorSprite: {fileID: 21300000, guid: b7051e97366fc4445bdc3fdeab0dd8b9, type: 3}
