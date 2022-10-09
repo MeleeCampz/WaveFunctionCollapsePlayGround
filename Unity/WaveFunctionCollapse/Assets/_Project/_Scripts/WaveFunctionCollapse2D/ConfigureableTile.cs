@@ -20,14 +20,14 @@ namespace WaveFunctionCollapse2D
 
         public bool IsCompleted { get; private set; }
 
-        public SOTileSettings Solution { get; private set; }
+        public TileSettings Solution { get; private set; }
 
         public Tilemap Map { get; private set; }
 
-        private readonly List<SOTileSettings> _validTiles = new List<SOTileSettings>();
+        private readonly List<TileSettings> _validTiles = new List<TileSettings>();
         private bool _dirtyDisplayData = false;
 
-        public void Init(SOGlobalTileSettings globalSettings, Vector3Int coordinates, IEnumerable<SOTileSettings> allSolutions, Tilemap map)
+        public void Init(SOGlobalTileSettings globalSettings, Vector3Int coordinates, IEnumerable<TileSettings> allSolutions, Tilemap map)
         {
             GlobalSettings = globalSettings;
             Coordinates = coordinates;
@@ -62,19 +62,23 @@ namespace WaveFunctionCollapse2D
             Debug.AssertFormat(!neighbor.IsError, "Neighbour is in error state!", this);
 #endif
 
-            int beforeCount = _validTiles.Count;
-
             //Left Neightbor
-            if      (neighbor.Coordinates.x < Coordinates.x) _validTiles.RemoveAll(x => x.leftConnectionType != neighbor.Solution.righConnectionType);
+            if (neighbor.Coordinates.x < Coordinates.x)         RemoveInvalidConnnection(3, neighbor.Solution.connections[1]);
             //Right Neightbor
-            else if (neighbor.Coordinates.x > Coordinates.x) _validTiles.RemoveAll(x => x.righConnectionType != neighbor.Solution.leftConnectionType);
+            else if (neighbor.Coordinates.x > Coordinates.x)    RemoveInvalidConnnection(1, neighbor.Solution.connections[3]);
             //Bottom Neightbor
-            else if (neighbor.Coordinates.y < Coordinates.y) _validTiles.RemoveAll(x => x.bottomConnectionType != neighbor.Solution.topConnectionType);
+            else if (neighbor.Coordinates.y < Coordinates.y)    RemoveInvalidConnnection(2, neighbor.Solution.connections[0]);
             //Top Neightbor
-            else                                             _validTiles.RemoveAll(x => x.topConnectionType != neighbor.Solution.bottomConnectionType);
+            else                                                RemoveInvalidConnnection(0, neighbor.Solution.connections[2]);
 
             CheckForSolution();
             return IsCompleted;
+        }
+
+        private void RemoveInvalidConnnection(int directionOfNeighbour, int solution)
+        {
+            List<int> allowedConnections = GlobalSettings.AllowedConnection[solution].data;
+            _validTiles.RemoveAll(x => !allowedConnections.Contains(x.connections[directionOfNeighbour]));
         }
 
         public void UpdateDisplay()
@@ -95,9 +99,7 @@ namespace WaveFunctionCollapse2D
 
                 Vector3Int location = Coordinates * GlobalSettings.TileSize;
                 Map.SetTile(location, Solution.Tile);
-
-                float rotation = SOTileSettings.GetRotationAngle(Solution.CurrentRotation);
-                Map.SetTransformMatrix(location, Matrix4x4.Rotate(Quaternion.Euler(Vector3.back * rotation)));
+                Map.SetTransformMatrix(location, Solution.Matrix);
             }
 
             _dirtyDisplayData = false;

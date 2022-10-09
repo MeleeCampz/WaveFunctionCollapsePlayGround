@@ -15,7 +15,37 @@ MonoBehaviour:
   _tileSize: {x: 1, y: 1, z: 0}
   _mapSize: {x: 16, y: 16}
   _allTileSettings:
+  - {fileID: 11400000, guid: 7f7451f8dd83a924fb6b5a6026029b4a, type: 2}
+  - {fileID: 11400000, guid: 9fd4cb91d2d5f4b44be9a74d47044b1b, type: 2}
   - {fileID: 11400000, guid: 434e86d54fd3cad4c81e91a57c62470a, type: 2}
   - {fileID: 11400000, guid: e9357ca309ecca34bb5ba37d180b8017, type: 2}
+  - {fileID: 11400000, guid: e51475b69bebe924c939682f1bc0795d, type: 2}
+  - {fileID: 11400000, guid: 95158c4867b6908449657ce42deb8f97, type: 2}
+  - {fileID: 11400000, guid: b8f03067a1b00204ab3d4cb7b417f370, type: 2}
+  - {fileID: 11400000, guid: 5226bf883f95db44597be5ece54fd22d, type: 2}
+  - {fileID: 11400000, guid: 5f987bc4caef81e40aee0e7c28089872, type: 2}
+  - {fileID: 11400000, guid: 0b86c958b2d6be8419ff5533640a1fb2, type: 2}
+  - {fileID: 11400000, guid: 77a5cc3c9713f274c8ef4cf7c5f74607, type: 2}
+  - {fileID: 11400000, guid: ce5371f520a62dc4ea7d8c03aa72bccf, type: 2}
+  - {fileID: 11400000, guid: dd45cfad6ebc43a418fba1e73fea642e, type: 2}
   _notSolvedTile: {fileID: 11400000, guid: d8a7333a771816b4fa600552b84241a6, type: 2}
   _errorTile: {fileID: 11400000, guid: 7bb7e38e96d7d4546b6489a1ad148043, type: 2}
+  AllowedConnection:
+  - DisplayName: StoneWall
+    data: 00000000
+  - DisplayName: WallBrickEmpty
+    data: 02000000
+  - DisplayName: EmptyBrickWall
+    data: 01000000
+  - DisplayName: Empty
+    data: 03000000
+  - DisplayName: Wood
+    data: 04000000
+  - DisplayName: WoodBrickWall
+    data: 06000000
+  - DisplayName: WallBrickWood
+    data: 05000000
+  - DisplayName: EmptyWood
+    data: 08000000
+  - DisplayName: WoodEmpty
+    data: 07000000

@@ -12,9 +12,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 63c98e41b8e5b094ca11362af1ac24b9, type: 3}
   m_Name: SOTileSettings_Edge_01
   m_EditorClassIdentifier: 
-  _tile: {fileID: 11400000, guid: 4666e75a7fc72db4787d08bd72e10f08, type: 2}
-  supportedRotations: 2
-  topConnectionType: 2
-  righConnectionType: 0
-  bottomConnectionType: 1
-  leftConnectionType: 3
+  Settingss:
+    Tile: {fileID: 11400000, guid: 4666e75a7fc72db4787d08bd72e10f08, type: 2}
+    supportedRotations: 2
+    supportedReflections: 0
+    connections: 02000000000000000100000003000000

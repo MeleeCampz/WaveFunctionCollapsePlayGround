@@ -3,8 +3,8 @@ using System.Collections.Generic;
 using Util;
 using UnityEngine;
 using UnityEngine.Tilemaps;
-using UnityEngine.Assertions.Must;
 using System.Linq;
+using static WaveFunctionCollapse2D.TileSettings;
 
 namespace WaveFunctionCollapse2D
 {
@@ -41,7 +41,7 @@ namespace WaveFunctionCollapse2D
 
 
         //Includes all supported rotations as well
-        private List<SOTileSettings> _allSettings = new();
+        private List<TileSettings> _allSettings = new();
 
 
         private ConfigureableTile[][] _map = new ConfigureableTile[0][];
@@ -63,6 +63,7 @@ namespace WaveFunctionCollapse2D
         private void Start()
         {
             Generate();
+            Solve();
         }
 
         public void Update()
@@ -151,10 +152,6 @@ namespace WaveFunctionCollapse2D
         /// </summary>
         public void CleanUp()
         {
-            foreach (var one in _allSettings)
-            {
-                Destroy(one);
-            }
             _allSettings.Clear();
 
             for (int x = 0; x < _map.Length; x++)
@@ -181,7 +178,7 @@ namespace WaveFunctionCollapse2D
 
             foreach (var one in _globalSettings.AllTileSettings)
             {
-                AddTileWithRotations(one);
+                AddTileWithRotationsAndReflections(one.Settingss);
             }
 
 
@@ -208,21 +205,31 @@ namespace WaveFunctionCollapse2D
             IsCompleted = false;
         }
 
-        private void AddTileWithRotations(SOTileSettings setting)
+        private void AddTileWithRotationsAndReflections(TileSettings setting)
         {
-            _allSettings.Add(Instantiate(setting));
-            AddTileRotationIfSupported(setting, SOTileSettings.Rotation.D90);
-            AddTileRotationIfSupported(setting, SOTileSettings.Rotation.D180);
-            AddTileRotationIfSupported(setting, SOTileSettings.Rotation.D270);
+            _allSettings.Add(setting.Clone());
+            AddTileRotationIfSupported(setting, Rotation.D90);
+            AddTileRotationIfSupported(setting, Rotation.D180);
+            AddTileRotationIfSupported(setting, Rotation.D270);
+            AddTileReflectionIfSupported(setting, Reflection.X);
+            AddTileReflectionIfSupported(setting, Reflection.Y);
+            AddTileReflectionIfSupported(setting, Reflection.D1);
+            AddTileReflectionIfSupported(setting, Reflection.D2);
         }
 
-        private void AddTileRotationIfSupported(SOTileSettings setting, SOTileSettings.Rotation rotation)
+        private void AddTileRotationIfSupported(TileSettings setting, Rotation rotation)
         {
             if (setting.supportedRotations.HasFlag(rotation))
             {
-                var instantiated = Instantiate(setting);
-                instantiated.ApplyRotation(rotation);
-                _allSettings.Add(instantiated);
+                _allSettings.Add(setting.GetRotatedVersion(rotation));
+            }
+        }
+
+        private void AddTileReflectionIfSupported(TileSettings settings, Reflection reflection)
+        {
+            if(settings.supportedReflections.HasFlag(reflection))
+            {
+                _allSettings.Add(settings.GetReflectedVersion(reflection));
             }
         }
 

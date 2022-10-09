@@ -10,10 +10,10 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 63c98e41b8e5b094ca11362af1ac24b9, type: 3}
-  m_Name: SOTileSettings_Center_01
+  m_Name: SOTileSettings_Wood_05
   m_EditorClassIdentifier: 
   Settingss:
-    Tile: {fileID: 11400000, guid: 9c4eb64432b851d41a350add2dcd75e5, type: 2}
-    supportedRotations: 0
+    Tile: {fileID: 11400000, guid: 4c4aa21529b2e5444b00a9911c180510, type: 2}
+    supportedRotations: 2
     supportedReflections: 0
-    connections: 03000000030000000300000003000000
+    connections: 00000000060000000400000005000000

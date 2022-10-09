@@ -22,5 +22,15 @@ namespace WaveFunctionCollapse2D
 
         [SerializeField] private Tile _errorTile;
         public Tile ErrorTile => _errorTile;
+
+        [System.Serializable]
+        public class IntList
+        {
+            public string DisplayName;
+            public List<int> data;
+        }
+
+        //TODO Make this into bitmask instead of this mess!!
+        public List<IntList> AllowedConnection; 
     }
 }
