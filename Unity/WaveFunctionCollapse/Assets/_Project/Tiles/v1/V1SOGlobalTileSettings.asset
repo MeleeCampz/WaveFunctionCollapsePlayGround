@@ -1,0 +1,29 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f119199a09dfdcc4fb32de8514d7ca38, type: 3}
+  m_Name: V1SOGlobalTileSettings
+  m_EditorClassIdentifier: 
+  _tileSize: {x: 1, y: 1, z: 0}
+  _mapSize: {x: 64, y: 64}
+  _allTileSettings:
+  - {fileID: 11400000, guid: 6e05656ddf24f8c4589b789eb8a6447a, type: 2}
+  - {fileID: 11400000, guid: e6d96ffc075428b4d869b300ad839a81, type: 2}
+  - {fileID: 11400000, guid: acd0980999fae6248be383f2252ebf32, type: 2}
+  - {fileID: 11400000, guid: c5ac7d405f0876b498c18bcc2181ecde, type: 2}
+  - {fileID: 11400000, guid: b589910a2e527184d8b6d6e12c5cf812, type: 2}
+  - {fileID: 11400000, guid: 1ab528b6e898b634a94a16a47e271764, type: 2}
+  - {fileID: 11400000, guid: fc0cac1cb2f7aed4da39761dab19c9eb, type: 2}
+  - {fileID: 11400000, guid: 24b8015b724e4494b84b611e9de8bd31, type: 2}
+  - {fileID: 11400000, guid: 044ca2400b8dce243b64781e28d00d6d, type: 2}
+  - {fileID: 11400000, guid: 0eba56f82cfa6e747b928ab4c1316a85, type: 2}
+  _notSolvedTile: {fileID: 11400000, guid: d8a7333a771816b4fa600552b84241a6, type: 2}
+  _errorTile: {fileID: 11400000, guid: 7bb7e38e96d7d4546b6489a1ad148043, type: 2}

@@ -2,6 +2,8 @@ using System.Collections;
 using System.Collections.Generic;
 using Util;
 using UnityEngine;
+using UnityEngine.Tilemaps;
+using UnityEngine.Assertions.Must;
 using System.Linq;
 
 namespace WaveFunctionCollapse2D
@@ -23,8 +25,8 @@ namespace WaveFunctionCollapse2D
 
         [Header("Basic generation settings")]
         [SerializeField] private SOGlobalTileSettings _globalSettings;
-        [SerializeField] private ConfigureableTile _tileBasePrefab;
-        [SerializeField] private RectTransform _mapRoot;
+        [SerializeField] private Tilemap _mapRoot;
+
 
         [SerializeField] private int seed;
 
@@ -32,18 +34,24 @@ namespace WaveFunctionCollapse2D
         public bool IsReadyToIterate { get; private set; } = false;
         public bool IsCompleted { get; private set; } = false;
 
-        private readonly HashSet<ConfigureableTile> _allTiles = new HashSet<ConfigureableTile>();
-        //Includes all supported rotations as well
-        private List<SOTileSettings> _allSettings = new List<SOTileSettings>();
+        private readonly HashSet<ConfigureableTile> _completedTiles = new();
+        private readonly HashSet<ConfigureableTile> _inprogressTiles = new();
+        private readonly HashSet<ConfigureableTile> _sleeptingTiles = new();
 
-        private ConfigureableTile[][] _map;
+
+
+        //Includes all supported rotations as well
+        private List<SOTileSettings> _allSettings = new();
+
+
+        private ConfigureableTile[][] _map = new ConfigureableTile[0][];
 
         private Coroutine _simulationRoutine;
+
 
         private void Awake()
         {
             this.DisableIfNull(_globalSettings, "Missing Global Settings assignment!");
-            this.DisableIfNull(_tileBasePrefab, "Missing Tile Base Prefab!");
         }
 
         //Destroy all instantiated settings, so we do not leek them
@@ -52,8 +60,22 @@ namespace WaveFunctionCollapse2D
             CleanUp();
         }
 
+        private void Start()
+        {
+            Generate();
+        }
+
+        public void Update()
+        {
+            foreach (var one in _inprogressTiles)
+            {
+                one.UpdateDisplay();
+            }
+        }
+
         public void Generate()
         {
+            seed++;
             CleanUp();
             SetUp();
         }
@@ -64,6 +86,22 @@ namespace WaveFunctionCollapse2D
             DoIterate();
         }
 
+        public void Solve()
+        {
+            if (IsCompleted)
+            {
+                Generate();
+            }
+
+            int i = 0;
+            while (!IsCompleted)
+            {
+                Iterate();
+                //Add saftey condition
+                if (i++ > 10000000)  break;
+            }
+        }
+
         public void StartAutoIterate()
         {
             if (_simulationRoutine != null) return;
@@ -72,7 +110,7 @@ namespace WaveFunctionCollapse2D
 
         public void StopAutoIterate()
         {
-            if(_simulationRoutine != null)
+            if (_simulationRoutine != null)
             {
                 StopCoroutine(_simulationRoutine);
                 _simulationRoutine = null;
@@ -85,21 +123,21 @@ namespace WaveFunctionCollapse2D
             if (!IsCompleted && IsReadyToIterate)
             {
                 Iterate(tile.Coordinates);
-                if(GetLowestEnropyTile() == null)
+                if (_sleeptingTiles.Count == 0 && _inprogressTiles.Count == 0)
                 {
-                    IsCompleted = true;
                     IsReadyToIterate = false;
+                    IsCompleted = true;
                 }
             }
         }
 
         private IEnumerator Simulation_Routine()
         {
-            while(IsReadyToIterate)
+            while (IsReadyToIterate)
             {
                 DoIterate();
                 yield return new WaitForSeconds(AutoIterationDelay);
-                if(IsCompleted)
+                if (IsCompleted)
                 {
                     _simulationRoutine = null;
                     yield break;
@@ -119,12 +157,16 @@ namespace WaveFunctionCollapse2D
             }
             _allSettings.Clear();
 
-            //TODO: Object pooling
-            foreach (var one in _allTiles)
+            for (int x = 0; x < _map.Length; x++)
             {
-                Destroy(one.gameObject);
+                for (int y = 0; y < _map[x].Length; y++)
+                {
+                    _map[x][y] = null;
+                }
             }
-            _allTiles.Clear();
+            _sleeptingTiles.Clear();
+            _completedTiles.Clear();
+            _inprogressTiles.Clear();
 
             IsReadyToIterate = false;
             IsCompleted = false;
@@ -139,24 +181,28 @@ namespace WaveFunctionCollapse2D
 
             foreach (var one in _globalSettings.AllTileSettings)
             {
-                AddTileWithRotations(one);                
+                AddTileWithRotations(one);
             }
-            
 
-            _map = new ConfigureableTile[_globalSettings.MapSize.x][];
+
+            if (_map.Length != _globalSettings.MapSize.x)
+            {
+                _map = new ConfigureableTile[_globalSettings.MapSize.x][];
+            }
             for (int x = 0; x < _globalSettings.MapSize.x; x++)
             {
-                _map[x] = new ConfigureableTile[_globalSettings.MapSize.y];
-                for (int y = 0; y < _globalSettings.MapSize.x; y++)
+                if (_map[x] == null || _map[x].Length != _globalSettings.MapSize.y)
                 {
-                    var newTile = Instantiate(_tileBasePrefab, _mapRoot);
-                    newTile.Init(_globalSettings, new Vector2Int(x, y), new Vector2(x * _globalSettings.TileSize.x, y * _globalSettings.TileSize.y), _allSettings);
-                    _allTiles.Add(newTile);
+                    _map[x] = new ConfigureableTile[_globalSettings.MapSize.y];
+                }
+                for (int y = 0; y < _globalSettings.MapSize.y; y++)
+                {
+                    ConfigureableTile newTile = new();
+                    newTile.Init(_globalSettings, new Vector3Int(x, y, 0), _allSettings, _mapRoot);
                     _map[x][y] = newTile;
+                    _sleeptingTiles.Add(newTile);
                 }
             }
-
-            _mapRoot.anchoredPosition = -(_globalSettings.MapSize * _globalSettings.TileSize) * 0.5f * _mapRoot.localScale;
 
             IsReadyToIterate = true;
             IsCompleted = false;
@@ -172,7 +218,7 @@ namespace WaveFunctionCollapse2D
 
         private void AddTileRotationIfSupported(SOTileSettings setting, SOTileSettings.Rotation rotation)
         {
-            if(setting.supportedRotations.HasFlag(rotation))
+            if (setting.supportedRotations.HasFlag(rotation))
             {
                 var instantiated = Instantiate(setting);
                 instantiated.ApplyRotation(rotation);
@@ -180,35 +226,53 @@ namespace WaveFunctionCollapse2D
             }
         }
 
-        public void Iterate(Vector2Int position)
+        public void Iterate(Vector3Int position)
         {
             var tile = _map[position.x][position.y];
             tile.ForceSolution();
+            _inprogressTiles.Remove(tile);
+            _sleeptingTiles.Remove(tile);
+            _completedTiles.Add(tile);
             PropagateTile(tile);
         }
 
+        private readonly PropagationStack _stack = new();
         private void PropagateTile(ConfigureableTile tile)
         {
-            PropagationStack stack = new PropagationStack();
-            AddNeighbours(stack, tile);
+            _stack.Clear();
+            AddNeighbours(tile, _stack);
 
-
-            while (stack.Count > 0)
+            while (_stack.Count > 0)
             {
-                var neighbourData = stack.Pop();
-                if(neighbourData.neighbour.Propagate(neighbourData.source))
+                var neighbourData = _stack.Pop();
+                //We may have solved this tile already, so we do not want to add it multiple times to the stack
+                if (neighbourData.neighbour.IsCompleted) continue;
+                _sleeptingTiles.Remove(neighbourData.neighbour);
+                //Only continue propagation if we found a solution
+                if (neighbourData.neighbour.Propagate(neighbourData.source))
                 {
-                    AddNeighbours(stack, neighbourData.neighbour);
+                    _inprogressTiles.Remove(neighbourData.neighbour);
+                    _completedTiles.Add(neighbourData.neighbour);
+                    //Add its non solved neighbours to the stack as well, if not in error state
+                    if (neighbourData.neighbour.IsSolved)
+                    {
+                        AddNeighbours(neighbourData.neighbour, _stack);
+                    }
+                }
+                else
+                {
+                    //Entropy should changed so we add it to in progress list
+                    _inprogressTiles.Add(neighbourData.neighbour);
                 }
             }
         }
 
-        private void AddNeighbours(PropagationStack stack, ConfigureableTile updatedTile)
+        private void AddNeighbours(ConfigureableTile updatedTile, PropagationStack stack)
         {
-            Vector2Int left = updatedTile.Coordinates + Vector2Int.left;
-            Vector2Int right = updatedTile.Coordinates + Vector2Int.right;
-            Vector2Int bottom = updatedTile.Coordinates + Vector2Int.down;
-            Vector2Int top = updatedTile.Coordinates + Vector2Int.up;
+            Vector3Int left = updatedTile.Coordinates + Vector3Int.left;
+            Vector3Int right = updatedTile.Coordinates + Vector3Int.right;
+            Vector3Int bottom = updatedTile.Coordinates + Vector3Int.down;
+            Vector3Int top = updatedTile.Coordinates + Vector3Int.up;
 
             TryAddNeighbour(stack, updatedTile, left);
             TryAddNeighbour(stack, updatedTile, right);
@@ -216,7 +280,7 @@ namespace WaveFunctionCollapse2D
             TryAddNeighbour(stack, updatedTile, top);
         }
 
-        private bool TryAddNeighbour(PropagationStack stack, ConfigureableTile updatedTile, Vector2Int coordinates)
+        private bool TryAddNeighbour(PropagationStack stack, ConfigureableTile updatedTile, Vector3Int coordinates)
         {
             if (IsValidCoordinate(coordinates))
             {
@@ -231,30 +295,47 @@ namespace WaveFunctionCollapse2D
             return false;
         }
 
-        private bool IsValidCoordinate(Vector2Int coordinate)
+        private bool IsValidCoordinate(Vector3Int coordinate)
         {
             if (coordinate.x < 0 || coordinate.x >= _map.Length) return false;
             if (coordinate.y < 0 || coordinate.y >= _map[coordinate.x].Length) return false;
             return true;
         }
 
+
+        private readonly List<ConfigureableTile> _possibleTiles = new List<ConfigureableTile>();
         private ConfigureableTile GetLowestEnropyTile()
         {
-            List<ConfigureableTile> possibleTiles = new List<ConfigureableTile>();
+            _possibleTiles.Clear();
+            int entropy = int.MaxValue;
 
-
-            int entropy = -1;
-            foreach (var tile in _allTiles.OrderBy(x => x.Entropy))
+            //In progress tiles will always have lower entropy than sleeping
+            if (_inprogressTiles.Count > 0)
             {
-                if (tile.IsCompleted) continue;
-                if (entropy == -1) entropy = tile.Entropy;
-                if (tile.Entropy > entropy) break;
-                possibleTiles.Add(tile);
+                foreach (var tile in _inprogressTiles)
+                {
+                    Debug.Assert(!tile.IsCompleted, "Completed tile found in inprogress list!", this);
+                    if (tile.Entropy < entropy)
+                    {
+                        entropy = tile.Entropy;
+                        _possibleTiles.Clear();
+                        _possibleTiles.Add(tile);
+                    }
+                    else if (tile.Entropy == entropy)
+                    {
+                        _possibleTiles.Add(tile);
+                    }
+                }
+
+                if (_possibleTiles.Count > 0)
+                {
+                    return _possibleTiles[Random.Range(0, _possibleTiles.Count)];
+                }
             }
-
-            if (possibleTiles.Count > 0)
+            else if (_sleeptingTiles.Count > 0)
             {
-                return possibleTiles[Random.Range(0, possibleTiles.Count)];
+                //TODO: return random elemtnt with somewhat decent speed
+                return _sleeptingTiles.First();
             }
             return null;
         }

@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Serialization;
+using UnityEngine.Tilemaps;
 
 namespace WaveFunctionCollapse2D
 {
@@ -18,31 +19,30 @@ namespace WaveFunctionCollapse2D
             All = D90 | D180 | D270,
         }
 
-
-        [SerializeField] private Sprite _sprite;
-        public Sprite Sprite => _sprite;
+        [SerializeField] private Tile _tile;
+        public Tile Tile => _tile;
 
         public Rotation CurrentRotation { get; private set; } = Rotation.None;
         public Rotation supportedRotations = Rotation.All;
 
         [Header("Debug - Will be replaced later!")]
-        public int topConnectionType;
-        public int righConnectionType;
-        public int bottomConnectionType;
-        public int leftConnectionType;
+        public int[] topConnectionType;
+        public int[] righConnectionType;
+        public int[] bottomConnectionType;
+        public int[] leftConnectionType;
 
         public void ApplyRotation(Rotation rotation)
         {
             if (rotation == CurrentRotation) return;
 
-            int[] currentSettings = new int[4];
+            int[][] currentSettings = new int[4][];
             currentSettings[0] = topConnectionType;
             currentSettings[1] = righConnectionType;
             currentSettings[2] = bottomConnectionType;
             currentSettings[3] = leftConnectionType;
 
             int offset = RotationToOffsetIndex(rotation) - RotationToOffsetIndex(CurrentRotation);
-            int[] offsettesSettings = new int[4];
+            int[][] offsettesSettings = new int[4][];
             for (int i = 0; i < 4; i++)
             {
                 offsettesSettings[(i + offset) % 4] = currentSettings[i];
@@ -65,5 +65,14 @@ namespace WaveFunctionCollapse2D
                 Rotation.D270 => 3,
                 _ => -1,
             };
+
+        public static float GetRotationAngle(Rotation rotation)
+          => rotation switch
+          {
+              Rotation.D90 => 90f,
+              Rotation.D180 => 180f,
+              Rotation.D270 => 270f,
+              _ => 0f,
+          };
     }
 }

@@ -15,6 +15,7 @@ namespace WaveFunctionCollapse2D
         [SerializeField] private Slider _sliderIterationOffset;
         [SerializeField] private Button _btnIterateAutomatically;
         [SerializeField] private Button _btnStopIterateAutonatically;
+        [SerializeField] private Button _btnGenerateAll;
 
 
         private const string PP_SIMULATION_SPEED = "Simulation_Speed";
@@ -35,6 +36,7 @@ namespace WaveFunctionCollapse2D
             }
             if (_btnIterateAutomatically) _btnIterateAutomatically.onClick.AddListener(StartIteration);
             if (_btnStopIterateAutonatically) _btnStopIterateAutonatically.onClick.AddListener(StopIteration);
+            if (_btnGenerateAll) _btnGenerateAll.onClick.AddListener(Solve);
         }
 
         private void OnDisable()
@@ -48,6 +50,7 @@ namespace WaveFunctionCollapse2D
             }
             if (_btnIterateAutomatically) _btnIterateAutomatically.onClick.RemoveListener(StartIteration);
             if (_btnStopIterateAutonatically) _btnStopIterateAutonatically.onClick.RemoveListener(StopIteration);
+            if (_btnGenerateAll) _btnGenerateAll.onClick.RemoveListener(Solve);
         }
 
 
@@ -56,5 +59,7 @@ namespace WaveFunctionCollapse2D
         private void SliderChanged(float value) => _waveFunctionCollapse.AutoIterationDelay = value;
         private void StartIteration() => _waveFunctionCollapse.StartAutoIterate();
         private void StopIteration() => _waveFunctionCollapse.StopAutoIterate();
+        private void Solve() => _waveFunctionCollapse.Solve();
+
     }
 }

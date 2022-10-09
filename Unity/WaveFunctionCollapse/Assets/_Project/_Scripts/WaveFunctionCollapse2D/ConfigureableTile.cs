@@ -1,49 +1,39 @@
-using TMPro;
-using System.Collections;
+//#define DASSERT
+
 using System.Collections.Generic;
+using TMPro;
 using UnityEngine;
-using UnityEngine.UI;
-using System.Net.Security;
-using System.Linq;
+using UnityEngine.Tilemaps;
 
 namespace WaveFunctionCollapse2D
 {
-    public class ConfigureableTile : MonoBehaviour
+    public class ConfigureableTile
     {
-        [SerializeField] private Image _image;
-        [SerializeField] private TMP_Text _debugText;
-        [SerializeField] private RectTransform _rectTransform;
-
         public SOGlobalTileSettings GlobalSettings { get; private set; }
-        //public SOSTileSettings Settings { get; private set; }
-        public Vector2 Position { get; private set; }
-        public Vector2Int Coordinates { get; private set; }
 
-        public int Entropy => _validTiles.Count;
+        public Vector3Int Coordinates { get; private set; }
 
-        public bool IsSolved => Solution != null;
+        public int Entropy { get; private set; } = -1;
+
+        public bool IsSolved { get; private set; }
         public bool IsError { get; private set; }
 
-        public bool IsCompleted => IsSolved || IsError;
+        public bool IsCompleted { get; private set; }
 
         public SOTileSettings Solution { get; private set; }
 
+        public Tilemap Map { get; private set; }
+
         private readonly List<SOTileSettings> _validTiles = new List<SOTileSettings>();
+        private bool _dirtyDisplayData = false;
 
-        public void Init(SOGlobalTileSettings globalSettings, Vector2Int coordinates, Vector2 position, IEnumerable<SOTileSettings> allSolutions)
+        public void Init(SOGlobalTileSettings globalSettings, Vector3Int coordinates, IEnumerable<SOTileSettings> allSolutions, Tilemap map)
         {
-            Debug.Assert(_image, "Missing image assignement!", this);
-            Debug.Assert(_debugText, "Missing Debug Test assignement!", this);
-            Debug.Assert(_rectTransform, "Missing Rect Transform assignement!", this);
-
             GlobalSettings = globalSettings;
-
             Coordinates = coordinates;
-            Position = position;
+            Map = map;
 
-            _rectTransform.sizeDelta = GlobalSettings.TileSize;
-            _rectTransform.anchoredPosition = position;
-
+            _validTiles.Clear();
             _validTiles.AddRange(allSolutions);
 
             CheckForSolution();
@@ -52,25 +42,28 @@ namespace WaveFunctionCollapse2D
 
         public void ForceSolution()
         {
-            Solution = _validTiles[Random.Range(0, _validTiles.Count)];
+            Solution = _validTiles[Random.Range(0, Entropy)];
             _validTiles.RemoveAll(x => x != Solution);
-
-            UpdateDisplay();
+            CheckForSolution();
         }
 
         /// <summary>
         /// Updates possible solutions basesd on neigbour information
         /// </summary>
         /// <param name="neighbor"></param>
-        /// <returns>True if the set of solutions has changed</returns>
+        /// <returns>True if this tile is now solved or if it is in an unsolveable error state </returns>
         public bool Propagate(ConfigureableTile neighbor)
         {
             if (IsCompleted) return false;
 
-            Debug.Assert((neighbor.Coordinates - Coordinates).sqrMagnitude ==  1, "Argument is not a neighbour!", this);
-            Debug.Assert(neighbor.IsSolved, "Neighbour is not solved!", this);
+#if DASSERT
+            Debug.AssertFormat((neighbor.Coordinates - Coordinates).sqrMagnitude ==  1, "Argument is not a neighbour!", this);
+            Debug.AssertFormat(neighbor.IsSolved, "Neighbour is not solved!", this);
+            Debug.AssertFormat(!neighbor.IsError, "Neighbour is in error state!", this);
+#endif
 
-            //Remove all tiles that are no longer allowed
+            int beforeCount = _validTiles.Count;
+
             //Left Neightbor
             if      (neighbor.Coordinates.x < Coordinates.x) _validTiles.RemoveAll(x => x.leftConnectionType != neighbor.Solution.righConnectionType);
             //Right Neightbor
@@ -81,57 +74,69 @@ namespace WaveFunctionCollapse2D
             else                                             _validTiles.RemoveAll(x => x.topConnectionType != neighbor.Solution.bottomConnectionType);
 
             CheckForSolution();
-            UpdateDisplay();
-            return IsSolved;
+            return IsCompleted;
         }
 
-        private bool CheckForSolution()
+        public void UpdateDisplay()
         {
-            Solution = null;
-            IsError = false;
-            if (_validTiles.Count == 0)
-            {
-                IsError = true;
-                return false;
-            }
-            else if (_validTiles.Count > 1)
-            {
-                return false;
-            }
-            Solution = _validTiles.First();
-            return true;
-        }
+            if (!_dirtyDisplayData || Map ==  null) return;
 
-        private void UpdateDisplay()
-        {
-            _debugText.enabled = false;
             if (IsError)
             {
-                _image.sprite = GlobalSettings.ErrorSprite;
+                Map.SetTile(Coordinates * GlobalSettings.TileSize, GlobalSettings.ErrorTile);
             }
             else if (Solution == null)
             {
-                _image.sprite = GlobalSettings.NotSolvedSprite;
-                _debugText.text = _validTiles.Count.ToString();
-                _debugText.enabled = true;
+                Map.SetTile(Coordinates * GlobalSettings.TileSize,  GlobalSettings.NotSolvedTile);
             }
             //Solved
             else
             {
-                _image.sprite = Solution.Sprite;
-                switch (Solution.CurrentRotation)
-                {
-                    case SOTileSettings.Rotation.D90:
-                        _rectTransform.localEulerAngles = Vector3.back * 90.0f;
-                        break;
-                    case SOTileSettings.Rotation.D180:
-                        _rectTransform.localEulerAngles = Vector3.back * 180;
-                        break;
-                    case SOTileSettings.Rotation.D270:
-                        _rectTransform.localEulerAngles = Vector3.back * 270;
-                        break;
-                }
 
+                Vector3Int location = Coordinates * GlobalSettings.TileSize;
+                Map.SetTile(location, Solution.Tile);
+
+                float rotation = SOTileSettings.GetRotationAngle(Solution.CurrentRotation);
+                Map.SetTransformMatrix(location, Matrix4x4.Rotate(Quaternion.Euler(Vector3.back * rotation)));
+            }
+
+            _dirtyDisplayData = false;
+        }
+
+        private void CheckForSolution()
+        {
+            int beforeCount = Entropy;
+            Entropy = _validTiles.Count;
+
+            //Skip if nothing changed
+            if (beforeCount == Entropy)  return;
+
+            _dirtyDisplayData = true;
+            if (Entropy == 0)
+            {
+                IsError = true;
+                IsCompleted = true;
+                Solution = null;
+                IsSolved = false;
+            }
+            else if (Entropy > 1)
+            {
+                IsError = false;
+                IsCompleted = false;
+                Solution = null;
+                IsSolved = false;
+            }
+            else
+            {
+                IsError = false;
+                IsCompleted = true;
+                Solution = _validTiles[0];
+                IsSolved = true;
+            }
+
+            if(IsCompleted)
+            {
+                UpdateDisplay();
             }
         }
     }
